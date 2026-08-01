@@ -8,10 +8,8 @@ import com.typezero.siphon.data.model.Tags
  * Pure builder that turns an [ExtractRequest] into the yt-dlp argument list
  * (everything except the python/yt-dlp executable, which the library prepends).
  *
- * The same pipeline serves BOTH sources: a local file path and a remote URL are
- * just the final positional token yt-dlp consumes. yt-dlp's generic extractor
- * accepts a local media path and runs the audio post-processors on it, so we get
- * identical format / quality / tagging behaviour for files and links.
+ * This builder is used for URL extraction. Local content URIs are handled by
+ * [LocalFfmpegExtractor], which invokes the bundled FFmpeg binary directly.
  *
  * No Android dependencies here on purpose — unit-test it on the JVM.
  */
@@ -54,7 +52,6 @@ object CommandFactory {
         baseName: String
     ): List<String> = buildList {
         val fmt = request.format
-        val isLink = request.source is ExtractRequest.Source.Link
 
         // --- extraction core ---
         add("--extract-audio")
@@ -69,7 +66,7 @@ object CommandFactory {
 
         // --- metadata / tagging (applies to local files and links alike) ---
         if (request.tags.embedSourceMetadata) add("--embed-metadata")
-        if (isLink && request.tags.embedThumbnail) {
+        if (request.tags.embedThumbnail) {
             add("--embed-thumbnail")
             add("--convert-thumbnails"); add("jpg")
         }
@@ -78,26 +75,23 @@ object CommandFactory {
         }
 
         // --- robustness for links ---
-        if (isLink) {
-            add("--retries"); add("5")
-            add("--fragment-retries"); add("5")
-            add("--no-warnings")
-            // YouTube 403 workaround: impersonate a different player client.
-            request.extractorClient?.takeIf { it.isNotBlank() }?.let { client ->
-                add("--extractor-args"); add("youtube:player_client=$client")
-            }
-            // Cookies for sign-in / "not a bot" gated content.
-            request.cookiesPath?.takeIf { it.isNotBlank() }?.let { path ->
-                add("--cookies"); add(path)
-            }
+        add("--retries"); add("5")
+        add("--fragment-retries"); add("5")
+        add("--no-warnings")
+        // YouTube 403 workaround: impersonate a different player client.
+        request.extractorClient?.takeIf { it.isNotBlank() }?.let { client ->
+            add("--extractor-args"); add("youtube:player_client=$client")
+        }
+        // Cookies for sign-in / "not a bot" gated content.
+        request.cookiesPath?.takeIf { it.isNotBlank() }?.let { path ->
+            add("--cookies"); add(path)
         }
     }
 
-    /** The final positional token yt-dlp consumes (file path or URL). */
-    fun sourceToken(request: ExtractRequest): String = when (val s = request.source) {
-        is ExtractRequest.Source.LocalFile -> (s.path ?: s.uri)
-        is ExtractRequest.Source.Link -> s.url
-    }
+    /** The final URL token yt-dlp consumes. */
+    fun sourceToken(request: ExtractRequest): String =
+        (request.source as? ExtractRequest.Source.Link)?.url
+            ?: error("CommandFactory only accepts link extraction requests")
 
     /** Predicted output extension (yt-dlp may pick a different one for "best"). */
     fun expectedExtension(fmt: AudioFormat): String = fmt.extension

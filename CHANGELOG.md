@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3-dev.2
+
+- Added a one-time legacy-file detection prompt for old app-private extraction copies.
+- Added a permanent Storage cleanup screen with file names, sizes, timestamps, totals, refresh, and separate deletion for legacy output and abandoned staging files.
+- Added destructive-action confirmation and disabled cleanup while an extraction is active.
+- Added an About Siphon screen with version, channel, package, yt-dlp/FFmpeg versions, safe diagnostics, source link, component notices, and application-updater status.
+- Advanced the development version and build code to `0.3-dev.2` / `4`.
+
+## 0.3-dev.1
+
+- Moved extraction into a foreground `CoroutineWorker` with persistent WorkManager state.
+- Added notification progress and WorkManager-backed cancellation.
+- Added transactional MediaStore export with rollback and byte-count verification.
+- Added unique per-job staging names and successful staging cleanup.
+- Removed full-video cache copies for scoped-storage content URIs; FFmpeg now reads a live file descriptor.
+- Added legacy Android 8/9 write permission handling.
+- Hardened cookie import with a 2 MB limit, streaming validation, and owner-only file permissions.
+- Redacted URLs and private cookie paths from extraction logs.
+- Serialized extractor initialisation with a mutex.
+- Reset metadata when a new source is selected and added a manual tag reset action.
+- Added URL validation, extractor-version display, and persistent recent job status.
+- Removed the unused FileProvider and documented the future signed APK updater architecture.
+- Added checksum-verifying `gradlew` and `gradlew.bat` bootstrap scripts.
+- Fixed the invalid `CoroutineWorker.onStopped()` override and moved native-process cancellation into coroutine cancellation paths.
+
 All notable changes to Siphon are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

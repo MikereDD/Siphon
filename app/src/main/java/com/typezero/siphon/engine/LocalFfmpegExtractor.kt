@@ -4,24 +4,24 @@ import android.content.Context
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import android.util.Log
 import com.typezero.siphon.data.model.AudioFormat
 import com.typezero.siphon.data.model.ExtractRequest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
+import java.io.Closeable
 import java.io.File
 import java.io.InputStreamReader
 import java.util.Collections
+import java.util.concurrent.TimeUnit
 
-/**
- * Extracts audio from a LOCAL file by invoking the bundled FFmpeg binary directly
- * (youtubedl-android ships it at <nativeLibDir>/libffmpeg.so with its shared libs
- * under noBackupFilesDir/youtubedl-android/packages/.../usr/lib).
- *
- * yt-dlp is only for URLs — handing it a local path makes its generic extractor
- * fail with "[generic] ... is not a valid URL", which is the bug this replaces.
- */
+/** Extracts audio from a local content URI with the bundled FFmpeg binary. */
 class LocalFfmpegExtractor(
     private val appContext: Context,
     private val engine: YtdlpEngine
@@ -45,61 +45,92 @@ class LocalFfmpegExtractor(
         processId: String,
         onProgress: (Float, String) -> Unit
     ): YtdlpEngine.Result = withContext(Dispatchers.IO) {
-        // Ensures python+ffmpeg packages are unzipped (libs the binary needs).
         engine.ensureInit()
-
-        val (inputPath, tempFile) = resolveInput(source)
-        try {
-            val mime = if (request.format == AudioFormat.COPY) probeAudioMime(inputPath) else null
-            val ext = FfmpegArgs.outputExtension(request.format, mime)
-            val base = outputResolver.sanitize(
-                request.outputName, File(source.displayName).nameWithoutExtension
-            )
-            val outFile = File(outputResolver.outputDir(), "$base.$ext")
-
-            val args = FfmpegArgs.build(
-                request.format, request.quality, inputPath, outFile.absolutePath, request.tags
-            )
-            runFfmpeg(args, processId, source.durationMs, onProgress)
-
-            if (!outFile.exists() || outFile.length() == 0L)
-                throw YtdlpEngine.EngineException("FFmpeg produced no output.")
-            YtdlpEngine.Result(outFile, ext)
-        } finally {
-            tempFile?.delete()
-            processes.remove(processId)
+        resolveInput(source).use { input ->
+            try {
+                val mime = if (request.format == AudioFormat.COPY) probeAudioMime(input) else null
+                val ext = FfmpegArgs.outputExtension(request.format, mime)
+                val jobStem = "siphon_${processId.replace("-", "")}"
+                val outFile = File(outputResolver.stagingDir(), "$jobStem.$ext")
+                val args = FfmpegArgs.build(
+                    request.format, request.quality, input.ffmpegPath,
+                    outFile.absolutePath, request.tags
+                )
+                try {
+                    runFfmpeg(args, processId, source.durationMs, onProgress)
+                } catch (cancelled: CancellationException) {
+                    cancel(processId)
+                    throw cancelled
+                }
+                if (!outFile.isFile || outFile.length() == 0L) {
+                    throw YtdlpEngine.EngineException("FFmpeg produced no output.")
+                }
+                YtdlpEngine.Result(outFile, ext)
+            } finally {
+                processes.remove(processId)
+            }
         }
     }
 
-    fun cancel(processId: String): Boolean =
-        processes[processId]?.let { runCatching { it.destroy() }.isSuccess } ?: false
 
-    /** Use the raw path when readable, else copy the content uri into cache. */
-    private fun resolveInput(source: ExtractRequest.Source.LocalFile): Pair<String, File?> {
-        val direct = source.path?.let(::File)
-        if (direct != null && direct.canRead()) return direct.absolutePath to null
-
-        val temp = File.createTempFile("siphon_in_", ".tmp", appContext.cacheDir)
-        appContext.contentResolver.openInputStream(Uri.parse(source.uri)).use { input ->
-            requireNotNull(input) { "Could not open the selected video." }
-            temp.outputStream().use { input.copyTo(it) }
-        }
-        return temp.absolutePath to temp
+    suspend fun ffmpegVersion(): String? = withContext(Dispatchers.IO) {
+        engine.ensureInit()
+        runCatching {
+            val pb = ProcessBuilder(ffmpegBinary, "-version").redirectErrorStream(true)
+            pb.environment().apply {
+                put("LD_LIBRARY_PATH", libraryPath)
+                put("TMPDIR", appContext.cacheDir.absolutePath)
+            }
+            val process = pb.start()
+            val firstLine = BufferedReader(InputStreamReader(process.inputStream)).use { it.readLine() }
+            if (!process.waitFor(5, TimeUnit.SECONDS)) process.destroyForcibly()
+            firstLine?.removePrefix("ffmpeg version ")?.substringBefore(' ')
+                ?.takeIf { it.isNotBlank() }
+        }.getOrNull()
     }
 
-    private fun probeAudioMime(path: String): String? = runCatching {
+    fun cancel(processId: String): Boolean {
+        val process = processes[processId] ?: return false
+        return runCatching {
+            process.destroy()
+            if (!process.waitFor(2, TimeUnit.SECONDS)) process.destroyForcibly()
+            true
+        }.getOrDefault(false)
+    }
+
+    private data class InputHandle(
+        val ffmpegPath: String,
+        val pfd: ParcelFileDescriptor? = null
+    ) : Closeable {
+        override fun close() { pfd?.close() }
+    }
+
+    /** Prefer a readable path; otherwise stream the content URI through /proc/self/fd. */
+    private fun resolveInput(source: ExtractRequest.Source.LocalFile): InputHandle {
+        source.path?.let(::File)?.takeIf { it.canRead() }?.let {
+            return InputHandle(it.absolutePath)
+        }
+        val pfd = appContext.contentResolver.openFileDescriptor(Uri.parse(source.uri), "r")
+            ?: throw YtdlpEngine.EngineException("Could not open the selected video.")
+        return InputHandle("/proc/self/fd/${pfd.fd}", pfd)
+    }
+
+    private fun probeAudioMime(input: InputHandle): String? = runCatching {
         val extractor = MediaExtractor()
         try {
-            extractor.setDataSource(path)
+            if (input.pfd != null) extractor.setDataSource(input.pfd.fileDescriptor)
+            else extractor.setDataSource(input.ffmpegPath)
             for (i in 0 until extractor.trackCount) {
                 val mime = extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)
                 if (mime != null && mime.startsWith("audio/")) return mime
             }
             null
-        } finally { extractor.release() }
+        } finally {
+            extractor.release()
+        }
     }.getOrNull()
 
-    private fun runFfmpeg(
+    private suspend fun runFfmpeg(
         args: List<String>,
         processId: String,
         durationMs: Long,
@@ -110,14 +141,17 @@ class LocalFfmpegExtractor(
             put("LD_LIBRARY_PATH", libraryPath)
             put("TMPDIR", appContext.cacheDir.absolutePath)
         }
-        Log.i(TAG, "ffmpeg ${args.joinToString(" ")}")
-
+        Log.i(TAG, "Starting FFmpeg job ${processId.take(8)}")
         val process = pb.start()
         processes[processId] = process
+        val coroutineJob = currentCoroutineContext()[Job]
 
         val tail = ArrayDeque<String>()
-        BufferedReader(InputStreamReader(process.errorStream)).use { reader ->
-            reader.forEachLine { line ->
+        BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
+            while (true) {
+                coroutineJob?.ensureActive()
+                val raw = reader.readLine() ?: break
+                val line = raw.takeLast(400)
                 if (tail.size >= 12) tail.removeFirst()
                 tail.addLast(line)
                 parseProgress(line, durationMs)?.let { onProgress(it, line) }

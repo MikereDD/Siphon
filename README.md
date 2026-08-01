@@ -8,10 +8,9 @@ Extract audio from a video — from a **local file** or a **link** — in the fo
 and quality you want, with full metadata tagging. Android / Kotlin + Jetpack
 Compose.
 
-**Latest version: 0.2.0** · [Changelog](https://github.com/MikereDD/It-Works-On-My-Machine/blob/main/Android/Siphon/CHANGELOG.md)
+**Development version: 0.3-dev.2** · [Changelog](https://github.com/MikereDD/It-Works-On-My-Machine/blob/main/Android/Siphon/CHANGELOG.md)
 
-📦 **Download:** [Siphon-v0.2.0.apk](https://github.com/MikereDD/It-Works-On-My-Machine/raw/main/Android/Siphon/releases/Siphon-v0.2.0.apk) — arm64-v8a, ~78 MB
-*(committed to `releases/` via Git LFS; see [Build](#build) for other ABIs)*
+The stable APK remains v0.2.0 while v0.3-dev.2 is under source testing.
 
 ## What it does
 
@@ -25,7 +24,10 @@ Compose.
 - **Tagging for both sources** — title, artist, album, album artist, genre,
   year, track and comment are written into the output, plus optional
   source-metadata and (for links) embedded thumbnail cover art.
-- Finished files land in **Music/Siphon** so any player picks them up.
+- Foreground WorkManager jobs survive Activity recreation, show notification progress, and cancel cleanly.
+- Finished files are transactionally exported to **Music/Siphon** so any player picks them up. Private staging files are deleted after verified export.
+- **Storage cleanup** detects files left in the old app-private output folder, shows their names and total size, and deletes them only after confirmation. Abandoned staging files older than 24 hours can be cleaned separately.
+- **About Siphon** shows app/build information, yt-dlp and FFmpeg versions, safe diagnostics, source and component notices, and the status of the planned signed APK updater.
 
 ## How it works
 
@@ -45,7 +47,7 @@ tagging options to the UI. This replaces the old ffmpeg-kit approach, retired in
 
 ## Build
 
-Standard Android Studio project — open `Android/Siphon/` and run, or:
+Standard Android Studio project — open `Android/Siphon/` and run, or use the checked-in checksum-verifying Gradle bootstrap scripts:
 
 ```bash
 ./gradlew :app:assembleRelease
@@ -85,7 +87,9 @@ work; this is a yt-dlp/YouTube limitation, not a Siphon bug.
 ## Permissions
 
 - `READ_MEDIA_VIDEO` (API 33+) / `READ_EXTERNAL_STORAGE` (≤32) — list local videos.
-- `INTERNET` — link extraction.
+- `WRITE_EXTERNAL_STORAGE` (API 26–28 only) — export into the shared Music collection on legacy Android.
+- `INTERNET` — link extraction and extractor updates.
+- Foreground-service and notification permissions — keep long extraction jobs visible and resilient.
 
 ## Tests
 
@@ -104,3 +108,8 @@ Only extract audio from content you own or otherwise have the right to use.
 
 ---
 Part of [It-Works-On-My-Machine](https://github.com/MikereDD/It-Works-On-My-Machine).
+
+
+## Planned application updater
+
+The current menu updates yt-dlp only. A separately secured APK updater is planned; see [`docs/UPDATER-PLAN.md`](docs/UPDATER-PLAN.md). It will require SHA-256 verification, package-name validation, pinned signing-certificate verification, and Android package-installer confirmation.

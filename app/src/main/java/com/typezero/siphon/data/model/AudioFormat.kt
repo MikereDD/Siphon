@@ -16,7 +16,7 @@ enum class AudioFormat(
     /** true when the format is lossy and a bitrate selector is meaningful. */
     val lossy: Boolean
 ) {
-    COPY("copy", "Best quality (keep original)", "best", "m4a", false),
+    COPY("copy", "Best quality (keep original)", "best", "mka", false),
     MP3("mp3", "MP3", "mp3", "mp3", true),
     M4A("m4a", "M4A / AAC", "m4a", "m4a", true),
     OPUS("opus", "Opus", "opus", "opus", true),

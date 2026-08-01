@@ -75,7 +75,14 @@ fun ExtractSheet(state: SiphonUiState, vm: SiphonViewModel) {
             )
 
             HorizontalDivider()
-            SectionLabel("Tags")
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SectionLabel("Tags")
+                TextButton(onClick = vm::resetTags) { Text("Reset") }
+            }
 
             val t = state.tags
             TagField("Title", t.title) { v -> vm.updateTags { it.copy(title = v) } }

@@ -6,43 +6,43 @@ import com.typezero.siphon.data.model.ExtractRequest
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 
-/**
- * Thin wrapper around youtubedl-android. One engine extracts audio from local
- * files and links alike. Heavy work runs off the main thread.
- */
+/** URL extraction wrapper around youtubedl-android. */
 class YtdlpEngine(private val appContext: Context) {
 
     @Volatile private var ready = false
+    private val initMutex = Mutex()
 
-    /** Must be called once before any extraction. Safe to call repeatedly. */
     suspend fun ensureInit() = withContext(Dispatchers.IO) {
         if (ready) return@withContext
-        try {
-            YoutubeDL.getInstance().init(appContext)
-            FFmpeg.getInstance().init(appContext)
-            ready = true
-        } catch (e: Exception) {
-            Log.e(TAG, "init failed", e)
-            throw EngineException("Failed to initialise extractor: ${e.message}", e)
+        initMutex.withLock {
+            if (ready) return@withLock
+            try {
+                YoutubeDL.getInstance().init(appContext)
+                FFmpeg.getInstance().init(appContext)
+                ready = true
+            } catch (e: Exception) {
+                Log.e(TAG, "Extractor initialisation failed", e)
+                throw EngineException("Failed to initialise extractor: ${e.message}", e)
+            }
         }
     }
 
-    /** Current yt-dlp version string, or null before first init/update. */
     fun extractorVersion(): String? =
         runCatching { YoutubeDL.getInstance().version(appContext) }.getOrNull()
 
-    /**
-     * Pull the latest yt-dlp binary. Nightly usually carries fixes for YouTube
-     * breakage (e.g. HTTP 403) weeks before stable. Returns a user-facing message.
-     */
     suspend fun updateBinary(nightly: Boolean): String = withContext(Dispatchers.IO) {
         ensureInit()
-        val channel = if (nightly) YoutubeDL.UpdateChannel.NIGHTLY
-                      else YoutubeDL.UpdateChannel.STABLE
+        val channel = if (nightly) YoutubeDL.UpdateChannel.NIGHTLY else YoutubeDL.UpdateChannel.STABLE
         try {
             val status = YoutubeDL.getInstance().updateYoutubeDL(appContext, channel)
             val ver = extractorVersion()?.let { " ($it)" } ?: ""
@@ -58,10 +58,6 @@ class YtdlpEngine(private val appContext: Context) {
 
     data class Result(val outputFile: File, val extension: String)
 
-    /**
-     * Runs one extraction. [onProgress] receives 0..1 (or -1 when indeterminate)
-     * plus the latest output line. [processId] lets the caller cancel.
-     */
     suspend fun extract(
         request: ExtractRequest,
         outputResolver: OutputResolver,
@@ -69,35 +65,37 @@ class YtdlpEngine(private val appContext: Context) {
         onProgress: (Float, String) -> Unit
     ): Result = withContext(Dispatchers.IO) {
         ensureInit()
-
-        val dir = outputResolver.outputDir()
-        val fallback = when (val s = request.source) {
-            is ExtractRequest.Source.LocalFile -> File(s.displayName).nameWithoutExtension
-            is ExtractRequest.Source.Link -> "audio_${System.currentTimeMillis()}"
-        }
-        val base = outputResolver.sanitize(request.outputName, fallback)
-
-        val args = CommandFactory.build(request, dir.absolutePath, base)
+        val coroutineJob = currentCoroutineContext()[Job]
+        val jobStem = "siphon_${processId.replace("-", "")}"
+        val args = CommandFactory.build(request, outputResolver.stagingDir().absolutePath, jobStem)
         val token = CommandFactory.sourceToken(request)
         val ytRequest = YoutubeDLRequest(token).addCommands(args)
 
-        Log.i(TAG, "yt-dlp ${(args + token).joinToString(" ")}")
-
+        Log.i(TAG, "Starting yt-dlp job ${processId.take(8)} (${request.format.id})")
         try {
             YoutubeDL.getInstance().execute(ytRequest, processId) { progress, _, line ->
-                onProgress(if (progress < 0) -1f else progress / 100f, line)
+                coroutineJob?.ensureActive()
+                onProgress(if (progress < 0) -1f else progress / 100f, redact(line))
             }
+        } catch (cancelled: CancellationException) {
+            cancel(processId)
+            throw cancelled
         } catch (e: Exception) {
             throw EngineException(friendly(e.message), e)
         }
 
-        val produced = outputResolver.locateOutput(base)
+        val produced = outputResolver.locateStaged(jobStem)
             ?: throw EngineException("Extraction finished but no output file was found.")
         Result(produced, produced.extension)
     }
 
     fun cancel(processId: String): Boolean =
         runCatching { YoutubeDL.getInstance().destroyProcessById(processId) }.getOrDefault(false)
+
+    private fun redact(line: String): String = line
+        .replace(Regex("https?://\\S+", RegexOption.IGNORE_CASE), "[source]")
+        .replace(Regex("--cookies\\s+\\S+", RegexOption.IGNORE_CASE), "--cookies [private]")
+        .takeLast(400)
 
     private fun friendly(raw: String?): String {
         val msg = raw ?: "Unknown error"
@@ -106,7 +104,8 @@ class YtdlpEngine(private val appContext: Context) {
             msg.contains("Video unavailable", true) -> "The source is unavailable or private."
             msg.contains("No such file", true) -> "The selected file could not be read."
             msg.contains("Requested format", true) -> "No matching audio stream for that format."
-            else -> msg.lineSequence().lastOrNull { it.isNotBlank() } ?: msg
+            msg.contains("Sign in to confirm", true) -> "The site requires sign-in cookies for this source."
+            else -> redact(msg.lineSequence().lastOrNull { it.isNotBlank() } ?: msg)
         }
     }
 
