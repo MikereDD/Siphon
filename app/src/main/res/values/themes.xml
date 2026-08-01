@@ -1,3 +1,11 @@
 <resources>
-    <style name="Theme.Siphon" parent="android:Theme.Material.NoActionBar" />
+    <style name="Theme.Siphon" parent="android:Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">#07080D</item>
+        <item name="android:windowBackground">#07080D</item>
+        <item name="android:colorAccent">#9B5CFF</item>
+    </style>
 </resources>

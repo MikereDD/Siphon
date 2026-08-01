@@ -108,7 +108,7 @@ class ExtractionWorker(appContext: Context, params: WorkerParameters) :
         val cancel = androidx.work.WorkManager.getInstance(applicationContext)
             .createCancelPendingIntent(id)
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_siphon_notification)
             .setContentTitle("Siphon")
             .setContentText(text.take(100))
             .setContentIntent(intent)

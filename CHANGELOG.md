@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3-dev.3
+
+- Rebuilt the Jetpack Compose interface around a premium OLED-dark visual system with a violet Siphon identity.
+- Added a new Siphon launcher icon aligned with the approved mockup.
+- Added persistent bottom navigation for Extract, History, Library, and Settings.
+- Added a premium extraction dashboard with local/link source cards, quick format and quality controls, trust indicators, and active-job status.
+- Added a dedicated live-extraction screen with circular progress visualization, job stage, format, quality, source, output, and cancellation controls.
+- Expanded WorkManager history presentation with status filters, saved source/format/quality context, timestamps, output size, and tap-to-open completed audio.
+- Added a completed-extraction Library view backed by persisted WorkManager results.
+- Rebuilt local-video selection, link extraction, extraction configuration, storage cleanup, Settings, and About around the new visual system.
+- Preserved the existing hardened extraction, MediaStore export, legacy cleanup, cookies, diagnostics, and updater-planning behavior.
+- Advanced the development version and build code to `0.3-dev.3` / `5`.
+
 ## 0.3-dev.2
 
 - Added a one-time legacy-file detection prompt for old app-private extraction copies.

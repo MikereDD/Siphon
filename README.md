@@ -8,9 +8,9 @@ Extract audio from a video — from a **local file** or a **link** — in the fo
 and quality you want, with full metadata tagging. Android / Kotlin + Jetpack
 Compose.
 
-**Development version: 0.3-dev.2** · [Changelog](https://github.com/MikereDD/It-Works-On-My-Machine/blob/main/Android/Siphon/CHANGELOG.md)
+**Development version: 0.3-dev.3** · [Changelog](https://github.com/MikereDD/It-Works-On-My-Machine/blob/main/Android/Siphon/CHANGELOG.md)
 
-The stable APK remains v0.2.0 while v0.3-dev.2 is under source testing.
+The stable APK remains v0.2.0 while v0.3-dev.3 is under source testing.
 
 ## What it does
 
@@ -28,6 +28,7 @@ The stable APK remains v0.2.0 while v0.3-dev.2 is under source testing.
 - Finished files are transactionally exported to **Music/Siphon** so any player picks them up. Private staging files are deleted after verified export.
 - **Storage cleanup** detects files left in the old app-private output folder, shows their names and total size, and deletes them only after confirmation. Abandoned staging files older than 24 hours can be cleaned separately.
 - **About Siphon** shows app/build information, yt-dlp and FFmpeg versions, safe diagnostics, source and component notices, and the status of the planned signed APK updater.
+- **Premium interface** — OLED-dark visual system, violet Siphon identity, four-section bottom navigation, extraction dashboard, dedicated live-job view, filtered history, completed-file library, and full-screen storage/About tools.
 
 ## How it works
 
@@ -70,8 +71,7 @@ compileSdk/targetSdk 35 · minSdk 26 · Java 17 · manual DI.
 
 YouTube changes constantly and the bundled yt-dlp goes stale, which shows up as
 `ERROR: unable to download video data: HTTP Error 403` — the title resolves but
-the media fetch is refused. Use **Update extractor → nightly** from the top-bar
-menu to pull the latest yt-dlp in place; the maintainers ship fixes almost daily.
+the media fetch is refused. Use **Settings → Update extractor** (or the nightly action when exposed) to pull the latest yt-dlp in place; the maintainers ship fixes almost daily.
 
 If a specific video is still blocked, the Link screen has two escalating fallbacks:
 switch the **player** (Default / TV / Web / iOS / Mobile), and if it asks you to
@@ -112,4 +112,4 @@ Part of [It-Works-On-My-Machine](https://github.com/MikereDD/It-Works-On-My-Mach
 
 ## Planned application updater
 
-The current menu updates yt-dlp only. A separately secured APK updater is planned; see [`docs/UPDATER-PLAN.md`](docs/UPDATER-PLAN.md). It will require SHA-256 verification, package-name validation, pinned signing-certificate verification, and Android package-installer confirmation.
+The current Settings and About actions update yt-dlp only. A separately secured APK updater is planned; see [`docs/UPDATER-PLAN.md`](docs/UPDATER-PLAN.md). It will require SHA-256 verification, package-name validation, pinned signing-certificate verification, and Android package-installer confirmation.

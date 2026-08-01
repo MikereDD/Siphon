@@ -88,6 +88,7 @@ class SiphonViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun selectTab(tab: Tab) = _state.update { it.copy(tab = tab) }
+    fun consumeRequestedTab() = _state.update { it.copy(tab = Tab.LOCAL) }
     fun setSearch(q: String) = _state.update { it.copy(searchQuery = q) }
     fun setLinkUrl(url: String) = _state.update { it.copy(linkUrl = url) }
     fun setLinkClient(client: YouTubeClient) = _state.update { it.copy(linkClient = client) }
@@ -325,7 +326,19 @@ class SiphonViewModel(private val container: AppContainer) : ViewModel() {
             .setInputData(ExtractionWorker.inputData(request, title))
             .addTag(ExtractionWorker.TAG)
             .build()
-        prefs.edit().putString("title_${work.id}", title).apply()
+        prefs.edit()
+            .putString("title_${work.id}", title)
+            .putString("format_${work.id}", s.format.label)
+            .putString(
+                "quality_${work.id}",
+                if (s.format.lossy) s.quality.label else if (s.format == AudioFormat.COPY) "Original stream" else "Lossless"
+            )
+            .putString(
+                "source_${work.id}",
+                if (source is ExtractRequest.Source.LocalFile) "Local video" else "Link / URL"
+            )
+            .putLong("created_${work.id}", System.currentTimeMillis())
+            .apply()
         workManager.enqueueUniqueWork(
             ExtractionWorker.UNIQUE_WORK,
             ExistingWorkPolicy.KEEP,
@@ -340,13 +353,21 @@ class SiphonViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun clearHistory() {
+        val edit = prefs.edit()
+        _state.value.history.forEach { job ->
+            edit.remove("title_${job.id}")
+            edit.remove("format_${job.id}")
+            edit.remove("quality_${job.id}")
+            edit.remove("source_${job.id}")
+            edit.remove("created_${job.id}")
+        }
+        edit.apply()
         workManager.pruneWork()
         _state.update { it.copy(history = emptyList()) }
     }
 
     private fun syncWork(infos: List<WorkInfo>) {
-        val sorted = infos.sortedByDescending { it.runAttemptCount.toLong() }
-        val jobs = sorted.map { info ->
+        val jobs = infos.map { info ->
             val title = prefs.getString("title_${info.id}", null) ?: "Audio extraction"
             val status = when (info.state) {
                 WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> JobState.Status.QUEUED
@@ -365,11 +386,15 @@ class SiphonViewModel(private val container: AppContainer) : ViewModel() {
                 outputPath = info.outputData.getString(ExtractionWorker.KEY_OUTPUT_PATH),
                 outputUri = info.outputData.getString(ExtractionWorker.KEY_OUTPUT_URI),
                 outputBytes = info.outputData.getLong(ExtractionWorker.KEY_OUTPUT_BYTES, 0L),
-                error = info.outputData.getString(ExtractionWorker.KEY_ERROR)
+                error = info.outputData.getString(ExtractionWorker.KEY_ERROR),
+                formatLabel = prefs.getString("format_${info.id}", null) ?: "Audio",
+                qualityLabel = prefs.getString("quality_${info.id}", null) ?: "Best available",
+                sourceLabel = prefs.getString("source_${info.id}", null) ?: "Media",
+                createdAt = prefs.getLong("created_${info.id}", 0L)
             )
-        }
+        }.sortedByDescending { it.createdAt }
         val active = jobs.firstOrNull { it.status == JobState.Status.RUNNING || it.status == JobState.Status.QUEUED }
-        val history = jobs.filter { it.status !in setOf(JobState.Status.RUNNING, JobState.Status.QUEUED) }.take(12)
+        val history = jobs.filter { it.status !in setOf(JobState.Status.RUNNING, JobState.Status.QUEUED) }.take(30)
         _state.update { it.copy(activeJob = active, history = history) }
     }
 
