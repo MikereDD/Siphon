@@ -8,3 +8,9 @@
 /captures
 .externalNativeBuild
 .cxx
+
+# Release binaries belong in Forgejo Releases, not Git
+*.apk
+
+# Release binaries belong in Forgejo Releases, not Git
+*.apk
