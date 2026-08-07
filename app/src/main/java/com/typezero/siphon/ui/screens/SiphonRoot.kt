@@ -79,6 +79,7 @@ fun SiphonRoot(vm: SiphonViewModel, onRequestPermission: () -> Unit) {
         } else {
             Scaffold(
                 containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onBackground,
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 topBar = {
                     PremiumTopBar(
@@ -150,7 +151,12 @@ private fun PremiumTopBar(
     }
 
     TopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            titleContentColor = MaterialTheme.colorScheme.onBackground,
+            actionIconContentColor = MaterialTheme.colorScheme.onBackground
+        ),
         navigationIcon = {
             if (isSubRoute) {
                 IconButton(onClick = onBack) {
@@ -174,14 +180,6 @@ private fun PremiumTopBar(
                 }
             }
         },
-        actions = {
-            if (section == AppSection.EXTRACT && extractRoute == ExtractRoute.DASHBOARD) {
-                Box(
-                    Modifier.padding(end = 18.dp).size(10.dp).clip(RoundedCornerShape(99.dp))
-                        .background(SiphonPurple)
-                )
-            }
-        }
     )
 }
 
@@ -218,6 +216,7 @@ private fun MiniActiveJob(job: JobState, onClick: () -> Unit) {
             .clip(RoundedCornerShape(17.dp))
             .clickable(onClick = onClick),
         color = SiphonSurfaceRaised,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         shape = RoundedCornerShape(17.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, SiphonPurple.copy(alpha = 0.32f)),
         shadowElevation = 8.dp

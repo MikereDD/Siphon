@@ -8,9 +8,9 @@ Extract audio from a video — from a **local file** or a **link** — in the fo
 and quality you want, with full metadata tagging. Android / Kotlin + Jetpack
 Compose.
 
-**Development version: 0.3-dev.3** · [Changelog](https://github.com/MikereDD/It-Works-On-My-Machine/blob/main/Android/Siphon/CHANGELOG.md)
+**Development version: 0.3-dev.4** · [Changelog](https://github.com/MikereDD/It-Works-On-My-Machine/blob/main/Android/Siphon/CHANGELOG.md)
 
-The stable APK remains v0.2.0 while v0.3-dev.3 is under source testing.
+The stable APK remains v0.2.0 while v0.3-dev.4 is under source testing.
 
 ## What it does
 

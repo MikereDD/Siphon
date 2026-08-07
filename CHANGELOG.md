@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3-dev.4
+
+- Fixed dark-theme contrast by assigning explicit foreground colors to premium cards, headings, source choices, empty states, settings identity, active-job surfaces, and transparent scaffolds.
+- Added a global premium content-color fallback so custom dark surfaces no longer inherit black text.
+- Kept history filters on one horizontally scrollable row instead of wrapping the Cancelled filter onto a second line.
+- Removed the unexplained purple header dot from the extraction dashboard.
+- Reworked the stable extractor update description so the installed yt-dlp version no longer interrupts the sentence.
+- Advanced the development version and build code to `0.3-dev.4` / `6`.
+
 ## 0.3-dev.3
 
 - Rebuilt the Jetpack Compose interface around a premium OLED-dark visual system with a violet Siphon identity.

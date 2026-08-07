@@ -51,8 +51,12 @@ fun SettingsScreen(state: SiphonUiState, vm: SiphonViewModel) {
                     }
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Siphon", style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold)
+                        Text(
+                            "Siphon",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
+                        )
                         Spacer(Modifier.height(3.dp))
                         Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                             style = MaterialTheme.typography.bodySmall,
@@ -91,8 +95,11 @@ fun SettingsScreen(state: SiphonUiState, vm: SiphonViewModel) {
                 SettingRow(
                     icon = Icons.Default.Update,
                     title = "Update extractor",
-                    subtitle = "Update yt-dlp stable without reinstalling Siphon",
-                    value = if (state.extractorUpdating) "Updating…" else state.extractorVersion ?: "Bundled",
+                    subtitle = if (state.extractorUpdating) {
+                        "Updating the stable extractor…"
+                    } else {
+                        "Current: ${state.extractorVersion ?: "Bundled"} · Update without reinstalling Siphon"
+                    },
                     enabled = !state.extractorUpdating && state.activeJob == null,
                     onClick = { vm.updateExtractor(nightly = false) }
                 )

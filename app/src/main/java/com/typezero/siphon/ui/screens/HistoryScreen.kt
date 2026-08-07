@@ -68,7 +68,8 @@ fun HistoryScreen(history: List<JobState>, onClear: () -> Unit) {
                 options = HistoryFilter.entries,
                 selected = filter,
                 label = { it.label },
-                onSelect = { filter = it }
+                onSelect = { filter = it },
+                singleLine = true
             )
         }
         if (filtered.isEmpty()) {
@@ -127,7 +128,11 @@ fun LibraryScreen(history: List<JobState>) {
                         horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.LibraryMusic, null, modifier = Modifier.size(42.dp), tint = SiphonPurple)
                         Spacer(Modifier.height(14.dp))
-                        Text("Your extracted audio will appear here", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Your extracted audio will appear here",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                         Spacer(Modifier.height(5.dp))
                         Text("Files are stored in Music/Siphon.", style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -235,8 +240,11 @@ private fun EmptyHistory(filter: HistoryFilter) {
         Column(Modifier.fillMaxWidth().padding(vertical = 30.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.Default.History, null, modifier = Modifier.size(42.dp), tint = SiphonPurple)
             Spacer(Modifier.height(14.dp))
-            Text(if (filter == HistoryFilter.ALL) "No extraction history yet" else "No ${filter.label.lowercase()} jobs",
-                style = MaterialTheme.typography.titleMedium)
+            Text(
+                if (filter == HistoryFilter.ALL) "No extraction history yet" else "No ${filter.label.lowercase()} jobs",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Spacer(Modifier.height(5.dp))
             Text("Start an extraction and its status will be saved here.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

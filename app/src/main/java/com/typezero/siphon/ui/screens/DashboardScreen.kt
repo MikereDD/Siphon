@@ -266,10 +266,23 @@ private fun StaticSettingRow(icon: ImageVector, label: String, value: String) {
     ) {
         Icon(icon, null, tint = SiphonPurpleSoft, modifier = Modifier.size(21.dp))
         Spacer(Modifier.width(12.dp))
-        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Surface(shape = RoundedCornerShape(10.dp), color = SiphonSurfaceBright) {
-            Text(value, Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
-                style = MaterialTheme.typography.labelMedium)
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = SiphonSurfaceBright,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ) {
+            Text(
+                value,
+                Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }

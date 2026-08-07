@@ -59,6 +59,7 @@ fun PremiumCard(
             .clip(RoundedCornerShape(20.dp))
             .then(interactionModifier),
         color = SiphonSurfaceRaised.copy(alpha = 0.96f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
         shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, SiphonOutline.copy(alpha = 0.72f)),
         tonalElevation = 0.dp,
@@ -76,7 +77,12 @@ fun SectionHeading(
 ) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            Text(
+                title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold
+            )
             if (!subtitle.isNullOrBlank()) {
                 Spacer(Modifier.height(3.dp))
                 Text(
@@ -120,7 +126,11 @@ fun SourceChoiceCard(
             IconTile(icon)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
                 Spacer(Modifier.height(3.dp))
                 Text(
                     subtitle,
