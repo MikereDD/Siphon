@@ -29,5 +29,5 @@ update/
   UpdateModels.kt            release metadata and UI state
 ```
 
-The extraction WorkManager implementation in v0.3-dev.1 establishes the lifecycle,
-notification, cancellation, and private-download patterns the application updater can reuse.
+The existing extraction WorkManager implementation establishes lifecycle, notification,
+cancellation, and private-download patterns that the application updater can reuse.

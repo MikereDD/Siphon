@@ -4,7 +4,11 @@
 
 - Replaced the horizontally clipped History filter strip with four compact equal-width premium filters so All, Completed, Failed, and Cancelled are visible together without scrolling.
 - Fixed a real-device crash when starting or updating foreground extraction notifications by declaring WorkManager's `SystemForegroundService` as `dataSync` in the merged manifest.
-- Kept this build intentionally focused on UI polish and real-device verification before beginning the application updater.
+- Restored the standard Gradle 8.9 wrapper, including `gradle-wrapper.jar`, so Android Studio and command-line builds use the same canonical wrapper.
+- Reworked repository ignore and line-ending rules for Android/Gradle development and release artifacts.
+- Rewrote Siphon documentation for the standalone repository and removed obsolete monorepo, Git LFS, and in-repository APK guidance.
+- Added the Apache License 2.0 for Siphon's original source plus project and third-party notices.
+- Kept this build focused on polish, build reliability, and real-device verification before beginning the application updater.
 - Advanced the development version and build code to `0.3-dev.5` / `7`.
 
 ## 0.3-dev.4
@@ -51,14 +55,15 @@
 - Reset metadata when a new source is selected and added a manual tag reset action.
 - Added URL validation, extractor-version display, and persistent recent job status.
 - Removed the unused FileProvider and documented the future signed APK updater architecture.
-- Added checksum-verifying `gradlew` and `gradlew.bat` bootstrap scripts.
+- Added temporary Gradle bootstrap scripts while the repository was missing a complete standard wrapper.
 - Fixed the invalid `CoroutineWorker.onStopped()` override and moved native-process cancellation into coroutine cancellation paths.
 
 All notable changes to Siphon are documented here.
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+Siphon uses stable versions such as `0.2.0` and development versions such as
+`0.3-dev.5`.
+
+## Unreleased
 
 ## [0.2.0] - 2026-06-14
 ### Added
@@ -103,8 +108,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cover art.
 - Output exported to the shared **Music/Siphon** library via MediaStore.
 - Live progress with cancel, plus a recent-jobs list.
-- Per-ABI APK splits and Git LFS configuration for release binaries.
-
-[Unreleased]: https://github.com/MikereDD/It-Works-On-My-Machine/compare/siphon-v0.2.0...HEAD
-[0.2.0]: https://github.com/MikereDD/It-Works-On-My-Machine/releases/tag/siphon-v0.2.0
-[0.1.0]: https://github.com/MikereDD/It-Works-On-My-Machine/releases/tag/siphon-v0.1.0
+- Per-ABI APK splits for release binaries.

@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,7 +24,6 @@ import com.typezero.siphon.ui.theme.*
 
 @Composable
 fun SettingsScreen(state: SiphonUiState, vm: SiphonViewModel) {
-    val uriHandler = LocalUriHandler.current
     val channel = if (BuildConfig.VERSION_NAME.contains("-dev")) "Development" else "Stable"
 
     LazyColumn(
@@ -135,13 +133,6 @@ fun SettingsScreen(state: SiphonUiState, vm: SiphonViewModel) {
                 )
                 HorizontalDivider(Modifier.padding(horizontal = 10.dp), color = SiphonOutline.copy(alpha = 0.65f))
                 SettingRow(
-                    icon = Icons.Default.Code,
-                    title = "View source repository",
-                    subtitle = "Open the current Siphon source",
-                    onClick = { uriHandler.openUri(SOURCE_REPOSITORY) }
-                )
-                HorizontalDivider(Modifier.padding(horizontal = 10.dp), color = SiphonOutline.copy(alpha = 0.65f))
-                SettingRow(
                     icon = Icons.Default.Description,
                     title = "Open-source notices",
                     onClick = vm::openLicenses
@@ -179,6 +170,3 @@ internal fun formatBytes(bytes: Long): String {
     }
     return "%.1f %s".format(java.util.Locale.US, value, units[unit])
 }
-
-internal const val SOURCE_REPOSITORY =
-    "https://github.com/MikereDD/It-Works-On-My-Machine/tree/main/Android/Siphon"

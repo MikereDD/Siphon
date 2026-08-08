@@ -21,7 +21,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -314,7 +313,6 @@ fun CleanupConfirmationDialog(target: CleanupTarget, state: SiphonUiState, vm: S
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(state: SiphonUiState, vm: SiphonViewModel) {
-    val uriHandler = LocalUriHandler.current
     val channel = if (BuildConfig.VERSION_NAME.contains("-dev")) "Development" else "Stable"
 
     Dialog(
@@ -412,12 +410,6 @@ fun AboutScreen(state: SiphonUiState, vm: SiphonViewModel) {
                             )
                             HorizontalDivider(Modifier.padding(horizontal = 10.dp), color = SiphonOutline.copy(alpha = 0.65f))
                             SettingRow(
-                                icon = Icons.Default.Code,
-                                title = "Open source repository",
-                                onClick = { uriHandler.openUri(SOURCE_REPOSITORY) }
-                            )
-                            HorizontalDivider(Modifier.padding(horizontal = 10.dp), color = SiphonOutline.copy(alpha = 0.65f))
-                            SettingRow(
                                 icon = Icons.Default.ContentCopy,
                                 title = "Copy diagnostics",
                                 onClick = vm::copyDiagnostics
@@ -464,12 +456,14 @@ fun LicensesDialog(onClose: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text(
-                    "Siphon uses youtubedl-android, yt-dlp, FFmpeg, aria2, AndroidX, Kotlin, and Jetpack Compose. " +
-                        "Each component remains subject to its own upstream license and notices."
+                    "Siphon's original source code is licensed under the Apache License 2.0. " +
+                        "Bundled dependencies remain subject to their own upstream licenses."
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "The project repository should retain the corresponding license and notice files when Siphon is distributed.",
+                    "The current extraction stack includes GPL-licensed youtubedl-android and aria2 components, " +
+                        "yt-dlp, FFmpeg, AndroidX, Kotlin, and Jetpack Compose. Public binary distribution must " +
+                        "preserve the applicable upstream license texts and notices.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
