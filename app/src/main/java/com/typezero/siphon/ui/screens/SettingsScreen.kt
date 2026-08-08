@@ -34,19 +34,11 @@ fun SettingsScreen(state: SiphonUiState, vm: SiphonViewModel) {
         item {
             PremiumCard(Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        modifier = Modifier.size(68.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        color = SiphonSurfaceBright,
-                        border = BorderStroke(1.dp, SiphonPurple.copy(alpha = 0.35f)),
-                        shadowElevation = 8.dp
-                    ) {
-                        Image(
-                            painter = painterResource(R.mipmap.ic_launcher),
-                            contentDescription = "Siphon icon",
-                            modifier = Modifier.padding(7.dp)
-                        )
-                    }
+                    Image(
+                        painter = painterResource(R.drawable.siphon_brand_mark),
+                        contentDescription = "Siphon brand mark",
+                        modifier = Modifier.size(68.dp)
+                    )
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
                         Text(

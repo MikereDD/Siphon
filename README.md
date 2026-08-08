@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/branding/siphon-header.png" alt="Siphon — Extract audio. Keep what matters." width="100%">
+  <img src="docs/assets/branding/siphon-header.png" alt="Siphon — Extract audio. Keep what matters." width="88%">
 </p>
 
 # Siphon
