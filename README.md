@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="ic_launcher-web.png" alt="Siphon icon" width="128">
+  <img src="docs/assets/branding/siphon-header.png" alt="Siphon — Extract audio. Keep what matters." width="100%">
 </p>
 
 # Siphon
@@ -8,7 +8,7 @@
 
 Siphon is an Android audio extractor for local video files and supported media links. It combines a focused Jetpack Compose interface with resilient background extraction, format and quality controls, metadata tagging, MediaStore export, and an updateable yt-dlp extractor.
 
-**Current development build:** `0.3-dev.5` (`versionCode 7`)
+**Current development build:** `0.3-dev.5` (`versionCode 7`)  
 **Stable release line:** `0.2.0`
 
 ## Features
@@ -50,6 +50,9 @@ app/
   src/test/      extraction argument unit tests
 
 docs/
+  assets/branding/
+    siphon-header.png
+    siphon-icon.png
   UPDATER-PLAN.md
 
 gradle/wrapper/
