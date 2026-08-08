@@ -11,6 +11,9 @@
 
 # Release binaries belong in Forgejo Releases, not Git
 *.apk
+*.aab
 
-# Release binaries belong in Forgejo Releases, not Git
-*.apk
+# Never commit signing material
+*.jks
+*.keystore
+keystore.properties

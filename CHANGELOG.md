@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3-dev.5
+
+- Replaced the horizontally clipped History filter strip with four compact equal-width premium filters so All, Completed, Failed, and Cancelled are visible together without scrolling.
+- Fixed a real-device crash when starting or updating foreground extraction notifications by declaring WorkManager's `SystemForegroundService` as `dataSync` in the merged manifest.
+- Kept this build intentionally focused on UI polish and real-device verification before beginning the application updater.
+- Advanced the development version and build code to `0.3-dev.5` / `7`.
+
 ## 0.3-dev.4
 
 - Fixed dark-theme contrast by assigning explicit foreground colors to premium cards, headings, source choices, empty states, settings identity, active-job surfaces, and transparent scaffolds.

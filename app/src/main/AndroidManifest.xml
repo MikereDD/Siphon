@@ -25,6 +25,12 @@
         android:extractNativeLibs="true"
         android:theme="@style/Theme.Siphon">
 
+        <!-- WorkManager foreground host for long-running extraction jobs. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

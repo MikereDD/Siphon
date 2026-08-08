@@ -22,7 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.typezero.siphon.data.model.JobState
-import com.typezero.siphon.ui.components.ChipRow
 import com.typezero.siphon.ui.components.PremiumCard
 import com.typezero.siphon.ui.components.SectionHeading
 import com.typezero.siphon.ui.components.StatusPill
@@ -64,18 +63,52 @@ fun HistoryScreen(history: List<JobState>, onClear: () -> Unit) {
             )
         }
         item {
-            ChipRow(
-                options = HistoryFilter.entries,
+            HistoryFilterBar(
                 selected = filter,
-                label = { it.label },
-                onSelect = { filter = it },
-                singleLine = true
+                onSelect = { filter = it }
             )
         }
         if (filtered.isEmpty()) {
             item { EmptyHistory(filter) }
         } else {
             items(filtered, key = { it.id }) { job -> JobHistoryCard(job) }
+        }
+    }
+}
+
+@Composable
+private fun HistoryFilterBar(
+    selected: HistoryFilter,
+    onSelect: (HistoryFilter) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        HistoryFilter.entries.forEach { option ->
+            val isSelected = option == selected
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp)
+                    .clickable { onSelect(option) },
+                shape = RoundedCornerShape(14.dp),
+                color = if (isSelected) SiphonPurple else SiphonSurfaceBright,
+                border = BorderStroke(
+                    1.dp,
+                    if (isSelected) SiphonPurpleBright else SiphonOutline
+                ),
+                contentColor = if (isSelected) Color.White else SiphonTextMuted
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        option.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
+                    )
+                }
+            }
         }
     }
 }
