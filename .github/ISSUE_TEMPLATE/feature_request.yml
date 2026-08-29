@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest an improvement that fits Siphon's focused extraction workflow
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the real workflow or limitation rather than only the desired control/button.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should Siphon do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional — include workarounds or simpler approaches you have considered.
+
+  - type: checkboxes
+    id: fit
+    attributes:
+      label: Scope check
+      options:
+        - label: This request is related to Siphon's core purpose of focused, reliable audio extraction.
+          required: true

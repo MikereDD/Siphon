@@ -1,0 +1,76 @@
+name: Bug report
+description: Report a reproducible problem in Siphon
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Siphon. Remove private URLs, cookies, tokens, credentials, usernames, and personal paths from anything you post.
+
+  - type: input
+    id: version
+    attributes:
+      label: Siphon version
+      placeholder: 0.3-dev.5
+    validations:
+      required: true
+
+  - type: input
+    id: android
+    attributes:
+      label: Android version and device
+      placeholder: Android 16, Pixel ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: Source type
+      options:
+        - Local video
+        - Media link
+        - Playlist / multi-item link
+        - App UI / settings
+        - Extractor updater
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the behavior and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Open Siphon
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs or extra context
+      description: Never include cookies, tokens, credentials, private URLs, or other secrets.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked for an existing issue describing the same problem.
+          required: true
+        - label: If this is a website extraction issue, I updated the extractor and retried.
+          required: false
+        - label: I removed private or sensitive data from anything included above.
+          required: true
