@@ -1,7 +1,16 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+}
+
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -26,9 +35,26 @@ android {
         )
     }
 
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                keyAlias = keystoreProperties["keyAlias"] as String
+
+                storePassword = System.getenv("SIPHON_KEYSTORE_PASSWORD")
+                    ?: error("SIPHON_KEYSTORE_PASSWORD is not set")
+
+                keyPassword = System.getenv("SIPHON_KEYSTORE_PASSWORD")
+                    ?: error("SIPHON_KEYSTORE_PASSWORD is not set")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

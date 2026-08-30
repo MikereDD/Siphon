@@ -1,5 +1,6 @@
 package com.typezero.siphon.update
 
+import androidx.core.content.pm.PackageInfoCompat
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -42,13 +43,8 @@ object ApkVerifier {
         require(candidateSigner.equals(installedSigner, true)) {
             "APK signing certificate does not match the installed Siphon application"
         }
-
-        val candidateCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            archive.longVersionCode
-        } else archive.versionCode.toLong()
-        val installedCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            installed.longVersionCode
-        } else installed.versionCode.toLong()
+        val candidateCode = PackageInfoCompat.getLongVersionCode(archive)
+        val installedCode = PackageInfoCompat.getLongVersionCode(installed)
 
         require(candidateCode > installedCode) {
             "Downloaded APK is not a newer Android versionCode"
