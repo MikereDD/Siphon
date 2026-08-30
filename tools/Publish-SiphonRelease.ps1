@@ -191,18 +191,37 @@ try {
         Set-GradleVersion $GradleFile $VersionCode $Version
 
         Run "git" @("diff", "--check")
+
+        $changed = @(git diff --name-only)
+        if ($LASTEXITCODE -ne 0) {
+            Fail "Could not inspect intended release-source changes."
+        }
+
+        if ($changed.Count -ne 1 -or $changed[0] -ne "app/build.gradle.kts") {
+            Fail "Intended release source contains unexpected changes."
+        }
+    }
+
+    # Preflight validation happens before creating the release-source commit.
+    Run ".\gradlew.bat" @("testDebugUnitTest")
+    Run ".\gradlew.bat" @("assembleDebug")
+
+    if (-not $DryRun) {
         Run "git" @("add", "app/build.gradle.kts")
         Run "git" @("diff", "--cached", "--check")
 
         $staged = @(git diff --cached --name-only)
         if ($staged.Count -ne 1 -or $staged[0] -ne "app/build.gradle.kts") {
-            Fail "Version bump staging contains unexpected files."
+            Fail "Release-source staging contains unexpected files."
         }
 
         Run "git" @("commit", "-m", "release: bump Siphon to $Version")
     }
 
     $BuildCommit = Get-FullCommit
+
+    # The canonical distributable must be built from the exact bound commit.
+    Assert-CleanTree
 
     $createdPasswordEnv = $false
     if (-not $env:SIPHON_KEYSTORE_PASSWORD) {
@@ -219,8 +238,6 @@ try {
     }
 
     try {
-        Run ".\gradlew.bat" @("testDebugUnitTest")
-        Run ".\gradlew.bat" @("assembleDebug")
         Run ".\gradlew.bat" @("clean", "assembleRelease")
     }
     finally {
@@ -228,6 +245,8 @@ try {
             Remove-Item Env:SIPHON_KEYSTORE_PASSWORD -ErrorAction SilentlyContinue
         }
     }
+
+    Assert-CleanTree
 
     $BuiltApk = Join-Path $RepoRoot "app\build\outputs\apk\release\app-arm64-v8a-release.apk"
     if (-not (Test-Path $BuiltApk)) {
