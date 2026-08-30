@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -91,7 +92,7 @@ fun StorageCleanupScreen(state: SiphonUiState, vm: SiphonViewModel) {
                         ),
                         navigationIcon = {
                             IconButton(onClick = vm::closeStorageCleanup, enabled = !busy) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                             }
                         },
                         title = { Text("Storage cleanup", style = MaterialTheme.typography.headlineSmall) },
@@ -334,7 +335,7 @@ fun AboutScreen(state: SiphonUiState, vm: SiphonViewModel) {
                         ),
                         navigationIcon = {
                             IconButton(onClick = vm::closeAbout) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                             }
                         },
                         title = { Text("About Siphon", style = MaterialTheme.typography.headlineSmall) }
@@ -349,7 +350,7 @@ fun AboutScreen(state: SiphonUiState, vm: SiphonViewModel) {
                 ) {
                     item {
                         Image(
-                            painter = painterResource(R.mipmap.ic_launcher),
+                            painter = painterResource(R.drawable.siphon_brand_mark),
                             contentDescription = "Siphon icon",
                             modifier = Modifier.size(92.dp)
                         )

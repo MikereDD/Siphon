@@ -6,6 +6,7 @@ import com.typezero.siphon.engine.CookieStore
 import com.typezero.siphon.engine.LocalFfmpegExtractor
 import com.typezero.siphon.engine.OutputResolver
 import com.typezero.siphon.engine.YtdlpEngine
+import com.typezero.siphon.update.AppUpdateService
 
 /** Manual application-scoped dependency container. */
 class AppContainer(context: Context) {
@@ -15,4 +16,5 @@ class AppContainer(context: Context) {
     val engine by lazy { YtdlpEngine(appContext) }
     val localExtractor by lazy { LocalFfmpegExtractor(appContext, engine) }
     val cookieStore by lazy { CookieStore(appContext) }
+    val appUpdateService by lazy { AppUpdateService(appContext) }
 }

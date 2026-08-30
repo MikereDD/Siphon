@@ -20,6 +20,7 @@ import com.typezero.siphon.data.model.AudioQuality
 import com.typezero.siphon.data.model.ExtractRequest
 import com.typezero.siphon.data.model.Tags
 import com.typezero.siphon.engine.OutputResolver
+import com.typezero.siphon.engine.ProgressMapper
 import kotlinx.coroutines.CancellationException
 
 /** Process-resilient foreground extraction and export job. */
@@ -45,13 +46,20 @@ class ExtractionWorker(appContext: Context, params: WorkerParameters) :
         var stagedPath: String? = null
 
         return try {
+            var highestProgress = -1
             val progress: (Float, String) -> Unit = { value, line ->
-                val percent = if (value < 0f) -1 else (value * 100).toInt().coerceIn(0, 100)
+                val mapped = ProgressMapper.map(value, line)
+                val percent = if (mapped.percent < 0) {
+                    highestProgress
+                } else {
+                    maxOf(highestProgress, mapped.percent).also { highestProgress = it }
+                }
+                val display = if (line.isBlank()) mapped.stage else "${mapped.stage} · ${line.takeLast(300)}"
                 setProgressAsync(Data.Builder()
                     .putInt(KEY_PROGRESS, percent)
-                    .putString(KEY_LINE, line.takeLast(400))
+                    .putString(KEY_LINE, display.takeLast(400))
                     .build())
-                setForegroundAsync(foreground(line.ifBlank { title }, percent))
+                setForegroundAsync(foreground(mapped.stage, percent))
             }
             val extracted = when (val source = request.source) {
                 is ExtractRequest.Source.LocalFile -> container.localExtractor.extract(
@@ -62,8 +70,8 @@ class ExtractionWorker(appContext: Context, params: WorkerParameters) :
                 )
             }
             stagedPath = extracted.outputFile.absolutePath
-            setProgress(Data.Builder().putInt(KEY_PROGRESS, 99).putString(KEY_LINE, "Saving to Music/Siphon").build())
-            setForeground(foreground("Saving to Music/Siphon", 99))
+            setProgress(Data.Builder().putInt(KEY_PROGRESS, 97).putString(KEY_LINE, "Saving to Music/Siphon").build())
+            setForeground(foreground("Saving to Music/Siphon", 97))
             val desiredStem = container.outputResolver.sanitize(
                 request.outputName,
                 when (val source = request.source) {

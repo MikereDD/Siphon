@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3-dev.6
+
+- Added the first Typezer∅-standard Siphon application-updater foundation with explicit Stable/Development channel selection, manifest schema/protocol validation, approved HTTPS origins, exact version comparison, private WorkManager staging, detached-signature and APK-identity verification boundaries, and Android package-installer handoff.
+- Kept updater downloads fail-closed until the real Typezer∅ release public key and canonical Siphon release APK signing certificate are deliberately pinned.
+- Reworked extraction progress so engine-local 100% never masquerades as whole-job completion while tagging, post-processing, and MediaStore export are still running.
+- Added clearer extraction stages and capped engine progress before the final save stage.
+- Fixed the About screen crash on modern Android by rendering Siphon's dedicated brand drawable instead of the adaptive launcher-icon XML through Compose `painterResource`.
+- Added a friendly HTTP 403 diagnostic that recommends refreshing the extractor first, matching real-device behavior observed with stale yt-dlp data.
+- Explicitly reject YouTube channel/playlist collection URLs until intentional multi-item extraction and export semantics are implemented.
+- Added regression tests for Typezer∅ version ordering, progress mapping, 403 guidance, and collection-link policy.
+- Advanced the development version and build code to `0.3-dev.6` / `8`.
+
 ## 0.3-dev.5
 
 - Replaced the horizontally clipped History filter strip with four compact equal-width premium filters so All, Completed, Failed, and Cancelled are visible together without scrolling.

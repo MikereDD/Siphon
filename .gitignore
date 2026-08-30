@@ -21,3 +21,12 @@
 *.jks
 *.keystore
 keystore.properties
+
+# Local environment / secrets
+.env
+.env.*
+*.log
+
+# Android signing/support files
+key.properties
+signing.properties

@@ -21,6 +21,7 @@ import com.typezero.siphon.ui.SiphonViewModel
 import com.typezero.siphon.ui.components.PremiumCard
 import com.typezero.siphon.ui.components.SettingRow
 import com.typezero.siphon.ui.theme.*
+import com.typezero.siphon.update.UpdateChannel
 
 @Composable
 fun SettingsScreen(state: SiphonUiState, vm: SiphonViewModel) {
@@ -105,10 +106,10 @@ fun SettingsScreen(state: SiphonUiState, vm: SiphonViewModel) {
                 SettingRow(
                     icon = Icons.Default.SystemUpdate,
                     title = "Application updates",
-                    subtitle = "Signed Siphon APK updater",
-                    value = "Coming later",
-                    enabled = false,
-                    onClick = {}
+                    subtitle = "Typezer∅-verified Siphon APK updater",
+                    value = if (state.updaterTrustConfigured) "Ready" else "Dev foundation",
+                    enabled = !state.appUpdateChecking && !state.appUpdateDownloading,
+                    onClick = vm::openUpdateDialog
                 )
             }
         }
@@ -149,6 +150,78 @@ fun SettingsScreen(state: SiphonUiState, vm: SiphonViewModel) {
             )
         }
     }
+    if (state.updateDialogOpen) {
+        AppUpdateDialog(state, vm)
+    }
+}
+
+@Composable
+private fun AppUpdateDialog(state: SiphonUiState, vm: SiphonViewModel) {
+    AlertDialog(
+        onDismissRequest = vm::closeUpdateDialog,
+        title = { Text("Application updates") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "Installed: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text("Channel", style = MaterialTheme.typography.labelMedium, color = SiphonTextMuted)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    UpdateChannel.entries.forEach { channel ->
+                        FilterChip(
+                            selected = state.updateChannel == channel,
+                            onClick = { vm.setUpdateChannel(channel) },
+                            label = { Text(channel.label) },
+                            enabled = !state.appUpdateChecking && !state.appUpdateDownloading
+                        )
+                    }
+                }
+                if (state.appUpdateChecking) {
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                    Text("Checking signed release metadata…")
+                }
+                if (state.appUpdateDownloading) {
+                    if (state.appUpdateProgress < 0) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    } else {
+                        LinearProgressIndicator(
+                            progress = { state.appUpdateProgress / 100f },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    Text(state.appUpdateStage.ifBlank { "Preparing update" })
+                }
+                state.appUpdateMessage?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (!state.updaterTrustConfigured) {
+                    Text(
+                        "Security gate: the real release public key and canonical Siphon APK signing certificate have not been pinned yet. This build can check manifests, but it will not download or install an untrusted release.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SiphonPurpleSoft
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            when {
+                state.verifiedUpdatePath != null -> TextButton(onClick = vm::installVerifiedUpdate) { Text("Install") }
+                state.appUpdateManifest != null && state.appUpdateAsset != null ->
+                    TextButton(
+                        onClick = vm::downloadApplicationUpdate,
+                        enabled = state.updaterTrustConfigured && !state.appUpdateDownloading
+                    ) { Text("Download & verify") }
+                else -> TextButton(
+                    onClick = vm::checkApplicationUpdate,
+                    enabled = !state.appUpdateChecking && !state.appUpdateDownloading
+                ) { Text("Check now") }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = vm::closeUpdateDialog) { Text("Close") }
+        }
+    )
 }
 
 internal fun formatBytes(bytes: Long): String {

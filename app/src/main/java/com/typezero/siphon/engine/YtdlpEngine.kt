@@ -81,7 +81,7 @@ class YtdlpEngine(private val appContext: Context) {
             cancel(processId)
             throw cancelled
         } catch (e: Exception) {
-            throw EngineException(friendly(e.message), e)
+            throw EngineException(redact(ExtractorErrorMapper.friendly(e.message)), e)
         }
 
         val produced = outputResolver.locateStaged(jobStem)
@@ -97,17 +97,6 @@ class YtdlpEngine(private val appContext: Context) {
         .replace(Regex("--cookies\\s+\\S+", RegexOption.IGNORE_CASE), "--cookies [private]")
         .takeLast(400)
 
-    private fun friendly(raw: String?): String {
-        val msg = raw ?: "Unknown error"
-        return when {
-            msg.contains("Unsupported URL", true) -> "That link isn't supported."
-            msg.contains("Video unavailable", true) -> "The source is unavailable or private."
-            msg.contains("No such file", true) -> "The selected file could not be read."
-            msg.contains("Requested format", true) -> "No matching audio stream for that format."
-            msg.contains("Sign in to confirm", true) -> "The site requires sign-in cookies for this source."
-            else -> redact(msg.lineSequence().lastOrNull { it.isNotBlank() } ?: msg)
-        }
-    }
 
     class EngineException(message: String, cause: Throwable? = null) : Exception(message, cause)
 

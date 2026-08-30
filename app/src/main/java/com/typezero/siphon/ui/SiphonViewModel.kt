@@ -17,6 +17,9 @@ import androidx.work.WorkManager
 import com.typezero.siphon.data.model.*
 import com.typezero.siphon.di.AppContainer
 import com.typezero.siphon.work.ExtractionWorker
+import com.typezero.siphon.engine.LinkPolicy
+import com.typezero.siphon.update.*
+import com.typezero.siphon.update.AppUpdateWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -56,6 +59,17 @@ data class SiphonUiState(
     val licensesOpen: Boolean = false,
     val ffmpegVersion: String? = null,
     val componentVersionsLoading: Boolean = false,
+    val updateDialogOpen: Boolean = false,
+    val updateChannel: UpdateChannel = if (BuildConfig.VERSION_NAME.contains("-dev")) UpdateChannel.DEVELOPMENT else UpdateChannel.STABLE,
+    val appUpdateChecking: Boolean = false,
+    val appUpdateDownloading: Boolean = false,
+    val appUpdateProgress: Int = -1,
+    val appUpdateStage: String = "",
+    val appUpdateManifest: ReleaseManifest? = null,
+    val appUpdateAsset: ReleaseAsset? = null,
+    val verifiedUpdatePath: String? = null,
+    val appUpdateMessage: String? = null,
+    val updaterTrustConfigured: Boolean = UpdateTrust.cryptographicAnchorsConfigured,
     val snackbar: String? = null
 ) {
     val visibleVideos: List<VideoItem>
@@ -70,6 +84,8 @@ class SiphonViewModel(private val container: AppContainer) : ViewModel() {
     private val workManager = WorkManager.getInstance(container.appContext)
     private val prefs = container.appContext.getSharedPreferences("jobs", 0)
     private val cleanupPrefs = container.appContext.getSharedPreferences("storage_cleanup", 0)
+    private val updateLiveData = workManager.getWorkInfosForUniqueWorkLiveData(AppUpdateWorker.UNIQUE_WORK)
+    private val updateObserver = Observer<List<WorkInfo>> { infos -> syncUpdateWork(infos.orEmpty()) }
 
     private val workLiveData = workManager.getWorkInfosForUniqueWorkLiveData(ExtractionWorker.UNIQUE_WORK)
     private val workObserver = Observer<List<WorkInfo>> { infos -> syncWork(infos.orEmpty()) }
@@ -77,6 +93,8 @@ class SiphonViewModel(private val container: AppContainer) : ViewModel() {
     init {
         _state.update { it.copy(cookiesLoaded = container.cookieStore.hasCookies()) }
         workLiveData.observeForever(workObserver)
+        updateLiveData.observeForever(updateObserver)
+        _state.update { it.copy(updateChannel = container.appUpdateService.currentChannel()) }
         viewModelScope.launch(Dispatchers.IO) {
             val version = runCatching {
                 container.engine.ensureInit()
@@ -132,6 +150,103 @@ class SiphonViewModel(private val container: AppContainer) : ViewModel() {
                     snackbar = msg
                 )
             }
+        }
+    }
+
+    fun openUpdateDialog() = _state.update { it.copy(updateDialogOpen = true) }
+
+    fun closeUpdateDialog() = _state.update { it.copy(updateDialogOpen = false) }
+
+    fun setUpdateChannel(channel: UpdateChannel) {
+        container.appUpdateService.preferences.setChannel(channel)
+        _state.update {
+            it.copy(
+                updateChannel = channel,
+                appUpdateManifest = null,
+                appUpdateAsset = null,
+                verifiedUpdatePath = null,
+                appUpdateMessage = "Channel changed to ${channel.label}. Check again."
+            )
+        }
+    }
+
+    fun checkApplicationUpdate() {
+        if (_state.value.appUpdateChecking || _state.value.appUpdateDownloading) return
+        _state.update {
+            it.copy(
+                appUpdateChecking = true,
+                appUpdateMessage = null,
+                appUpdateManifest = null,
+                appUpdateAsset = null,
+                verifiedUpdatePath = null
+            )
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = runCatching {
+                container.appUpdateService.check(_state.value.updateChannel)
+            }
+            _state.update { s ->
+                result.fold(
+                    onSuccess = { check ->
+                        when (check) {
+                            is UpdateCheckResult.Available -> s.copy(
+                                appUpdateChecking = false,
+                                appUpdateManifest = check.manifest,
+                                appUpdateAsset = check.asset,
+                                appUpdateMessage = if (UpdateTrust.cryptographicAnchorsConfigured) {
+                                    "Siphon ${check.manifest.version} is available."
+                                } else {
+                                    "Siphon ${check.manifest.version} is available, but this development build does not have the final release trust anchors pinned yet."
+                                }
+                            )
+                            is UpdateCheckResult.Current -> s.copy(
+                                appUpdateChecking = false,
+                                appUpdateMessage = "Siphon ${check.version} is up to date."
+                            )
+                            is UpdateCheckResult.NotPublished -> s.copy(
+                                appUpdateChecking = false,
+                                appUpdateMessage = check.message
+                            )
+                        }
+                    },
+                    onFailure = { error -> s.copy(
+                        appUpdateChecking = false,
+                        appUpdateMessage = error.message ?: "Application update check failed"
+                    ) }
+                )
+            }
+        }
+    }
+
+    fun downloadApplicationUpdate() {
+        val s = _state.value
+        val manifest = s.appUpdateManifest ?: return
+        val asset = s.appUpdateAsset ?: return
+        if (!UpdateTrust.cryptographicAnchorsConfigured) {
+            _state.update { it.copy(appUpdateMessage = "Release trust anchors are not configured yet; download is blocked by design.") }
+            return
+        }
+        val work = OneTimeWorkRequestBuilder<AppUpdateWorker>()
+            .setInputData(AppUpdateWorker.inputData(manifest.version, asset))
+            .build()
+        workManager.enqueueUniqueWork(AppUpdateWorker.UNIQUE_WORK, ExistingWorkPolicy.REPLACE, work)
+        _state.update {
+            it.copy(appUpdateDownloading = true, appUpdateProgress = -1, appUpdateStage = "Preparing update")
+        }
+    }
+
+    fun installVerifiedUpdate() {
+        val path = _state.value.verifiedUpdatePath ?: return
+        val launched = runCatching {
+            UpdateInstaller.launch(container.appContext, java.io.File(path))
+        }
+        _state.update {
+            it.copy(
+                appUpdateMessage = launched.fold(
+                    onSuccess = { if (it) "Android installer opened." else "Allow installs from Siphon, return here, then tap Install again." },
+                    onFailure = { e -> e.message ?: "Could not open Android's installer" }
+                )
+            )
         }
     }
 
@@ -284,6 +399,10 @@ class SiphonViewModel(private val container: AppContainer) : ViewModel() {
             _state.update { it.copy(snackbar = "Enter a complete http:// or https:// link") }
             return
         }
+        LinkPolicy.collectionReason(url)?.let { reason ->
+            _state.update { it.copy(snackbar = reason) }
+            return
+        }
         _state.update {
             it.copy(
                 sheetOpen = true,
@@ -398,8 +517,43 @@ class SiphonViewModel(private val container: AppContainer) : ViewModel() {
         _state.update { it.copy(activeJob = active, history = history) }
     }
 
+    private fun syncUpdateWork(infos: List<WorkInfo>) {
+        val info = infos.maxByOrNull { it.runAttemptCount } ?: return
+        val progress = info.progress.getInt(AppUpdateWorker.KEY_PROGRESS, -1)
+        val stage = info.progress.getString(AppUpdateWorker.KEY_STAGE).orEmpty()
+        when (info.state) {
+            WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED, WorkInfo.State.RUNNING -> _state.update {
+                it.copy(
+                    appUpdateDownloading = true,
+                    appUpdateProgress = progress,
+                    appUpdateStage = stage.ifBlank { "Preparing update" }
+                )
+            }
+            WorkInfo.State.SUCCEEDED -> _state.update {
+                it.copy(
+                    appUpdateDownloading = false,
+                    appUpdateProgress = 100,
+                    appUpdateStage = "Verified",
+                    verifiedUpdatePath = info.outputData.getString(AppUpdateWorker.KEY_APK_PATH),
+                    appUpdateMessage = "Update verified. Android will ask for confirmation before installation."
+                )
+            }
+            WorkInfo.State.FAILED -> _state.update {
+                it.copy(
+                    appUpdateDownloading = false,
+                    appUpdateMessage = info.outputData.getString(AppUpdateWorker.KEY_ERROR)
+                        ?: "Application update verification failed"
+                )
+            }
+            WorkInfo.State.CANCELLED -> _state.update {
+                it.copy(appUpdateDownloading = false, appUpdateMessage = "Application update cancelled")
+            }
+        }
+    }
+
     override fun onCleared() {
         workLiveData.removeObserver(workObserver)
+        updateLiveData.removeObserver(updateObserver)
         super.onCleared()
     }
 
