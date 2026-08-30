@@ -31,7 +31,7 @@ The app is built around a few simple priorities:
 - **A UI that looks intentional** without getting in the way of the job.
 
 > [!IMPORTANT]
-> Siphon is currently a development build. The current development version is **`0.3-dev.5`** (`versionCode 7`). The latest stable line remains **`0.2.0`**.
+> Siphon is currently on the Development channel. The current development version is **`0.3-dev.7`** (`versionCode 9`). The latest stable line remains **`0.2.0`**.
 
 ## Highlights
 
@@ -48,6 +48,7 @@ The app is built around a few simple priorities:
 | 🕘 | **History + Library** for completed work and exported audio |
 | 🧹 | **Storage cleanup** for abandoned staging and legacy private output |
 | ⬆️ | **yt-dlp extractor maintenance** with stable and nightly update options |
+| 📦 | **Signed application updates** with pinned trust, detached signature verification, and Android package-installer handoff |
 | 🌑 | **OLED-first interface** with Siphon's violet visual identity |
 
 ## How it works
@@ -79,7 +80,7 @@ Siphon is organized into four focused sections:
 - **Extract** — choose a local video or link, output format, quality, and metadata options.
 - **History** — review completed, failed, and cancelled jobs.
 - **Library** — open successfully exported audio.
-- **Settings** — extractor maintenance, storage cleanup, app information, and supporting controls.
+- **Settings** — extractor maintenance, application updates, storage cleanup, app information, and supporting controls.
 
 The application uses a deliberately dark OLED-oriented interface with violet identity accents and adaptive/themed launcher artwork.
 
@@ -135,7 +136,7 @@ or:
 .\gradlew.bat assembleRelease
 ```
 
-Release signing and publishing are intentionally separate from compilation. APKs, AABs, signing material, local SDK configuration, IDE state, and build output do **not** belong in source history.
+Release signing and publishing are separate from ordinary compilation. APKs, AABs, signing material, local SDK configuration, IDE state, and build output do **not** belong in source history.
 
 > [!NOTE]
 > The current Gradle configuration builds only `arm64-v8a` to keep the package manageable with the bundled Python and FFmpeg runtime. Additional ABIs must be explicitly enabled and tested in `app/build.gradle.kts`.
@@ -146,14 +147,15 @@ Siphon requests only permissions required by its current feature set:
 
 | Permission | Why it is used |
 | --- | --- |
-| `INTERNET` | Link extraction and extractor updates |
+| `INTERNET` | Link extraction, extractor updates, and application-update checks/downloads |
 | `ACCESS_NETWORK_STATE` | Network-aware operations |
 | `READ_MEDIA_VIDEO` | Local video discovery on Android 13+ |
 | `READ_EXTERNAL_STORAGE` | Local video access on Android 12L and older |
 | `WRITE_EXTERNAL_STORAGE` | Shared Music export on Android 8/9 only |
-| `FOREGROUND_SERVICE` | Long-running extraction |
-| `FOREGROUND_SERVICE_DATA_SYNC` | Android foreground-service classification for extraction work |
-| `POST_NOTIFICATIONS` | Foreground extraction status where Android requires it |
+| `FOREGROUND_SERVICE` | Long-running extraction and WorkManager-backed operations |
+| `FOREGROUND_SERVICE_DATA_SYNC` | Android foreground-service classification for data-sync work |
+| `POST_NOTIFICATIONS` | Foreground job status where Android requires it |
+| `REQUEST_INSTALL_PACKAGES` | User-approved handoff of a verified Siphon APK to Android's package installer |
 
 ## Extractor updates and cookies
 
@@ -167,11 +169,53 @@ Some services may still require authentication or anti-bot mechanisms that canno
 
 ## Application updates
 
-The **extractor updater** and the future **Siphon application updater** are intentionally separate systems.
+The **extractor updater** and **Siphon application updater** are separate systems.
 
-The application updater has not been enabled yet. When implemented, it will follow the shared Typezer∅ release/update standard derived from the CouchLink updater work: channel-aware manifests, exact version handling, SHA-256 verification, signing-certificate verification, safe private downloads, Android's package-installer confirmation, downgrade protection, and failure-safe behavior.
+The application updater is implemented and currently exercised on the Development channel. It follows the shared Typezer∅ Android release/update standards:
 
-See [the updater plan](docs/UPDATER-PLAN.md) and [release guidance](docs/RELEASES.md).
+- channel-aware schema-revision-2 manifests;
+- exact Typezer∅ version comparison;
+- approved HTTPS release origins;
+- pinned detached-release public-key identity;
+- detached RSA/SHA-256 release-signature verification;
+- APK SHA-256 and signature-file SHA-256 verification;
+- pinned Android APK signing-certificate identity;
+- exact package/version checks;
+- app-private WorkManager download staging;
+- Android package-installer confirmation;
+- downgrade/same-version rejection;
+- stale update-file cleanup.
+
+The signed `0.3-dev.6` → `0.3-dev.7` Development update was validated end to end, including installation with the same APK signing identity and application-data preservation.
+
+See [the updater architecture](docs/UPDATER-PLAN.md), [release guidance](docs/RELEASES.md), and the historical [v0.3-dev.6 updater checkpoint](docs/UPDATER-IMPLEMENTATION-v0.3-dev.6.md).
+
+## Release publishing
+
+Siphon includes `tools/Publish-SiphonRelease.ps1`, a fail-closed single-command publisher aligned with the Typezer∅ Android Release Publishing Standard.
+
+For a real release, the publisher performs the equivalent of:
+
+```text
+verify clean/synchronized main
+→ write intended version
+→ tests + preflight debug build
+→ commit exact release source
+→ bind release build commit
+→ clean canonical release build from that commit
+→ verify APK signing certificate
+→ verify detached release public-key fingerprint
+→ checksum + detached signature + signature verification
+→ generate notes, validation record, and manifest
+→ explicit publish confirmation
+→ tag exact build commit
+→ push source/tag
+→ create GitHub release with canonical assets
+→ publish live updater manifest
+→ verify remote assets and live manifest
+```
+
+`-DryRun` performs local validation without tags, pushes, GitHub release changes, or live-manifest publication, and writes artifacts to a separate `*-dryrun` folder.
 
 ## Project structure
 
@@ -182,8 +226,14 @@ app/
     di/          lightweight application container
     engine/      yt-dlp, FFmpeg, cookies, output resolution
     ui/          Jetpack Compose UI and ViewModel
-    work/        foreground WorkManager extraction
-  src/test/      extraction argument unit tests
+    update/      application updater, trust, verification, installer handoff
+    work/        foreground WorkManager extraction/update work
+  src/test/      extraction/updater regression tests
+
+tools/
+  Publish-SiphonRelease.ps1
+  Generate-SiphonReleaseManifest.ps1
+  Generate-Checksums.ps1
 
 docs/
   assets/branding/
@@ -191,6 +241,7 @@ docs/
     siphon-icon.png
   RELEASES.md
   UPDATER-PLAN.md
+  UPDATER-IMPLEMENTATION-v0.3-dev.6.md
 
 .github/
   workflows/     GitHub Actions verification
@@ -209,8 +260,8 @@ Security-sensitive reports should **not** be posted as public issues. See [`SECU
 - Generated APK/AAB files belong in GitHub/Forgejo Releases, not commits.
 - Signing keys, keystores, tokens, cookies, SDK paths, caches, and IDE-local state must never be committed.
 - The checked-in Gradle wrapper is the canonical command-line build entry point.
-- Public release artifacts should include checksums and release notes.
-- The application updater must consume release metadata produced under the shared Typezer∅ release rules rather than inventing a Siphon-only format.
+- Android releases use the canonical six-file Typezer∅ release set.
+- The application updater consumes release metadata produced under the shared Typezer∅ release rules rather than a Siphon-only format.
 
 ## License
 

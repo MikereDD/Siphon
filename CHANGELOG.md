@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3-dev.7
+
+- Established and pinned Siphon's production Typezer∅ detached release-key identity and canonical Android APK signing-certificate identity.
+- Published the schema-revision-2 application update manifest and completed the first real signed Development update from `0.3-dev.6` to `0.3-dev.7`, preserving application data through Android's normal package-installer path.
+- Added the fail-closed single-command release publisher with local validation, canonical six-file Android release generation, explicit publication confirmation, annotated source tagging, GitHub prerelease publication, remote asset digest verification, and live-manifest verification.
+- Added isolated `-DryRun` release validation so test artifacts cannot overwrite canonical local release artifacts and no public mutation occurs.
+- Hardened release provenance to run tests/preflight first, bind the exact release-source commit, then produce the clean canonical distributable build from that committed state.
+- Advanced the development version and build code to `0.3-dev.7` / `9`.
 ## 0.3-dev.6
 
 - Added the first Typezer∅-standard Siphon application-updater foundation with explicit Stable/Development channel selection, manifest schema/protocol validation, approved HTTPS origins, exact version comparison, private WorkManager staging, detached-signature and APK-identity verification boundaries, and Android package-installer handoff.
