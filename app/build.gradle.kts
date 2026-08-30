@@ -21,8 +21,8 @@ android {
         applicationId = "com.typezero.siphon"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "0.3-dev.6"
+        versionCode = 9
+        versionName = "0.3-dev.7"
     }
 
     // Native libs must be extracted on install for the bundled binaries to run.
