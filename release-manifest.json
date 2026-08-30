@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 2,
+  "appId": "siphon",
+  "displayName": "Siphon",
+  "platform": "android",
+  "architecture": "arm64-v8a",
+  "channel": "development",
+  "version": "0.3-dev.7",
+  "publishedAt": "2026-08-30T15:31:28Z",
+  "minimumVersion": "0.3-dev.5",
+  "updaterProtocolVersion": 2,
+  "minimumUpdaterProtocolVersion": 2,
+  "mandatory": false,
+  "releaseNotesUrl": "https://github.com/MikereDD/Siphon/releases/tag/v0.3-dev.7",
+  "changelogUrl": "CHANGELOG.md",
+  "assets": [
+    {
+      "fileName": "Siphon-v0.3-dev.7.apk",
+      "downloadUrl": "https://github.com/MikereDD/Siphon/releases/download/v0.3-dev.7/Siphon-v0.3-dev.7.apk",
+      "size": 72421533,
+      "sha256": "a33671f490569877758288b13c664c1892cc4e67dfa1498c4f0ba2147a8f71b3",
+      "signature": {
+        "algorithm": "rsa-sha256",
+        "fileName": "Siphon-v0.3-dev.7.apk.sig",
+        "downloadUrl": "https://github.com/MikereDD/Siphon/releases/download/v0.3-dev.7/Siphon-v0.3-dev.7.apk.sig",
+        "size": 512,
+        "sha256": "371b05527a00f72958f9cc637fa271f85a80ab04b74eda6c23a8d5bf7f076d93",
+        "keyId": "typezero-siphon-release-01",
+        "publicKeySha256": "3a08b42ab07b9d87ded218cb4df49d4a77c265f2a5f1a8a9847d5c0780c6546f"
+      },
+      "packageId": "com.typezero.siphon",
+      "signingCertificateSha256": "4f933b15ebef515aaa3e441579e768aaf314d5d4e27ec27fd1e94ecf9501513c"
+    }
+  ],
+  "source": {
+    "repositoryUrl": "https://github.com/MikereDD/Siphon",
+    "tag": "v0.3-dev.7",
+    "commit": "7b70a106085929474a64f4b454ff2a8bbcf1df75"
+  },
+  "rollback": {
+    "supported": false,
+    "retainVersions": 0
+  }
+}

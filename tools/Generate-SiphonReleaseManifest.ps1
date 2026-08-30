@@ -43,7 +43,7 @@ $Manifest = [ordered]@{
     updaterProtocolVersion = 2
     minimumUpdaterProtocolVersion = 2
     mandatory = $false
-    releaseNotesUrl = "docs/releases/$Tag.md"
+    releaseNotesUrl = "https://github.com/MikereDD/Siphon/releases/tag/$Tag"
     changelogUrl = "CHANGELOG.md"
     assets = @(
         [ordered]@{
