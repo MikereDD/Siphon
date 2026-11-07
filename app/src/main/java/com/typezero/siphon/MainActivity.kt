@@ -12,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import com.typezero.siphon.engine.LinkPolicy
 import com.typezero.siphon.ui.SiphonViewModel
 import com.typezero.siphon.ui.Tab
 import com.typezero.siphon.ui.screens.SiphonRoot
@@ -69,7 +70,7 @@ class MainActivity : ComponentActivity() {
     private fun handleShareIntent(intent: Intent?) {
         if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
             intent.getStringExtra(Intent.EXTRA_TEXT)?.let { shared ->
-                vm.setLinkUrl(shared.trim())
+                vm.setLinkUrl(LinkPolicy.extractUrl(shared) ?: shared.trim())
                 vm.selectTab(Tab.LINK)
             }
         }

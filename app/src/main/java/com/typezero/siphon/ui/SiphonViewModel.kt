@@ -394,8 +394,8 @@ class SiphonViewModel(private val container: AppContainer) : ViewModel() {
             _state.update { it.copy(snackbar = "Finish or cancel the active extraction first") }
             return
         }
-        val url = _state.value.linkUrl.trim()
-        if (!url.startsWith("http://", true) && !url.startsWith("https://", true)) {
+        val url = LinkPolicy.extractUrl(_state.value.linkUrl)
+        if (url == null) {
             _state.update { it.copy(snackbar = "Enter a complete http:// or https:// link") }
             return
         }
@@ -407,6 +407,7 @@ class SiphonViewModel(private val container: AppContainer) : ViewModel() {
             it.copy(
                 sheetOpen = true,
                 pendingSource = ExtractRequest.Source.Link(url),
+                linkUrl = url,
                 outputName = "",
                 tags = Tags(embedSourceMetadata = true, embedThumbnail = true)
             )

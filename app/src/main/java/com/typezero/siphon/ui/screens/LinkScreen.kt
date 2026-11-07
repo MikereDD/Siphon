@@ -5,6 +5,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,8 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.typezero.siphon.data.model.YouTubeClient
+import com.typezero.siphon.engine.LinkPolicy
 import com.typezero.siphon.ui.SiphonUiState
 import com.typezero.siphon.ui.SiphonViewModel
 import com.typezero.siphon.ui.components.ChipRow
@@ -27,6 +32,7 @@ import com.typezero.siphon.ui.theme.*
 @Composable
 fun LinkScreen(state: SiphonUiState, vm: SiphonViewModel) {
     val clipboard = LocalClipboardManager.current
+    val extractedUrl = LinkPolicy.extractUrl(state.linkUrl)
     val cookiePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(vm::importCookies)
     }
@@ -53,6 +59,19 @@ fun LinkScreen(state: SiphonUiState, vm: SiphonViewModel) {
                     }
                 },
                 singleLine = true,
+                isError = state.linkUrl.isNotBlank() && extractedUrl == null,
+                supportingText = {
+                    if (state.linkUrl.isNotBlank() && extractedUrl == null) {
+                        Text("Enter a complete http:// or https:// link")
+                    }
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Uri,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { if (extractedUrl != null) vm.openSheetForLink() }
+                ),
                 shape = RoundedCornerShape(15.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = SiphonSurfaceBright,
@@ -66,7 +85,7 @@ fun LinkScreen(state: SiphonUiState, vm: SiphonViewModel) {
             PremiumPrimaryButton(
                 text = "Choose format and metadata",
                 onClick = vm::openSheetForLink,
-                enabled = state.linkUrl.isNotBlank(),
+                enabled = extractedUrl != null,
                 icon = Icons.Default.Tune,
                 modifier = Modifier.fillMaxWidth()
             )
