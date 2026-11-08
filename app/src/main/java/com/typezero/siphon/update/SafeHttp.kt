@@ -20,6 +20,42 @@ object SafeHttp {
         }
     }
 
+    /** Exact HTTP response bytes for detached-signature verification. Never reserialize JSON. */
+    fun getBytes(url: String, maxBytes: Int): ByteArray {
+        require(maxBytes in 1..1048576) { "Invalid response size limit" }
+        var current = url
+        repeat(6) {
+            val connection = openApproved(current)
+            try {
+                val code = connection.responseCode
+                if (code in 300..399) {
+                    val location = connection.getHeaderField("Location")
+                        ?: error("Update redirect had no destination")
+                    current = URL(URL(current), location).toString()
+                    validateUrl(current)
+                    return@repeat
+                }
+                if (code == HttpURLConnection.HTTP_NOT_FOUND) throw NotFoundException()
+                require(code in 200..299) { "Update server returned HTTP $code" }
+                require(connection.contentLengthLong <= maxBytes.toLong()) { "Response exceeds byte limit" }
+                connection.inputStream.use { input ->
+                    val out = java.io.ByteArrayOutputStream()
+                    val buffer = ByteArray(8192)
+                    while (true) {
+                        val n = input.read(buffer)
+                        if (n < 0) break
+                        require(out.size() + n <= maxBytes) { "Response exceeds byte limit" }
+                        out.write(buffer, 0, n)
+                    }
+                    return out.toByteArray()
+                }
+            } finally {
+                connection.disconnect()
+            }
+        }
+        error("Too many update redirects")
+    }
+
     fun download(url: String, destination: File, onBytes: (Long, Long) -> Unit): Download {
         var current = url
         repeat(6) {

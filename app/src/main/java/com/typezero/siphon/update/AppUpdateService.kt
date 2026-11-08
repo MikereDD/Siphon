@@ -6,6 +6,15 @@ import com.typezero.siphon.BuildConfig
 class AppUpdateService(private val context: Context) {
     val preferences = UpdatePreferences(context)
 
+    /**
+     * Explicit metadata-only pre-release vNext check with independently provisioned trust.
+     * This does not change the live schema-2 check, advertise a vNext update, or install APKs.
+     */
+    internal fun checkVNextMetadata(
+        feed: VNextUpdateCheck.Feed,
+        channel: UpdateChannel = preferences.channel()
+    ): VNextUpdateCheck.Metadata = VNextUpdateCheck(VNextPreferencesStore(context)).check(feed, channel)
+
     fun check(channel: UpdateChannel = preferences.channel()): UpdateCheckResult {
         val text = try {
             SafeHttp.getText(UpdateTrust.MANIFEST_URL)
