@@ -109,4 +109,5 @@ dependencies {
     implementation("io.github.junkfood02.youtubedl-android:aria2c:$ytdl")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }
