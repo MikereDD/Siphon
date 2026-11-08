@@ -11,9 +11,15 @@ class AppUpdateService(private val context: Context) {
      * This does not change the live schema-2 check, advertise a vNext update, or install APKs.
      */
     internal fun checkVNextMetadata(
-        feed: VNextUpdateCheck.Feed,
+        manifestUrl: String,
         channel: UpdateChannel = preferences.channel()
-    ): VNextUpdateCheck.Metadata = VNextUpdateCheck(VNextPreferencesStore(context)).check(feed, channel)
+    ): VNextUpdateCheck.Metadata {
+        // Never accept release trust keys from a network feed or UI caller.
+        val installedPolicy = VNextInstalledTrust.configuredPolicyOrNull()
+            ?: error("Siphon vNext release trust has not been provisioned")
+        return VNextTrustedMetadataCheck(VNextPreferencesStore(context))
+            .check(manifestUrl, installedPolicy, channel)
+    }
 
     fun check(channel: UpdateChannel = preferences.channel()): UpdateCheckResult {
         val text = try {
