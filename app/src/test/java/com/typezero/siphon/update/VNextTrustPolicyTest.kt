@@ -13,7 +13,14 @@ class VNextTrustPolicyTest {
     )
 
     @Test fun unprovisionedAndDuplicateAnchorsFailClosed() {
-        assertEquals(null, VNextInstalledTrust.configuredPolicyOrNull())
+        val installed = VNextInstalledTrust.configuredPolicyOrNull()
+        assertTrue(installed != null)
+        val pinned = installed!!.approvedKeys().single()
+        assertEquals("typezero-siphon-vnext-release-01", pinned.keyId)
+        assertEquals("44f7f7b657f810af4c9a715233f456a56d7f15c684261f7197009592518ffb89", pinned.spkiSha256)
+        val actualFingerprint = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(pinned.spkiDer).joinToString("") { "%02x".format(it) }
+        assertEquals(pinned.spkiSha256, actualFingerprint)
         assertThrows(IllegalArgumentException::class.java) {
             VNextTrustPolicy.fromInstalledAnchors(emptyList())
         }
